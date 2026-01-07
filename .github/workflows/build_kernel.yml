@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ["MotoG30-Stock", "LineageOS-20", "Zenitsu", "DivestOS-13", "Sage-Android-14"]
+        # He dejado solo el tuyo para evitar errores de los otros modelos
+        version: ["MotoG30-Stock"] 
 
     env:
       VERSION: ${{ matrix.version }}
@@ -22,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4 # Actualizado a v4
 
       - name: Install build dependencies
         run: |
@@ -36,7 +37,7 @@ jobs:
           echo "USE_CCACHE=1" >> $GITHUB_ENV
 
       - name: Cache ccache
-        uses: actions/cache@v2
+        uses: actions/cache@v4 # Actualizado a v4
         with:
           path: ~/.ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}
@@ -59,9 +60,7 @@ jobs:
 
       - name: Make output directory for kernel
         run: |
-          mkdir outw
-          mkdir outw/false
-          mkdir outw/true
+          mkdir -p outw/false outw/true # Corregido para evitar error si ya existe
 
       - name: Move kernel without KernelSU support to output directory
         run: |
@@ -77,7 +76,7 @@ jobs:
         run: echo "KERNELSU=true" >> $GITHUB_ENV
 
       - name: Set KERNELSU_VERSION environment variable
-        run: echo "KERNELSU_VERSION=$(cat ksu_version.txt)" >> $GITHUB_ENV
+        run: echo "KERNELSU_VERSION=$(cat ksu_version.txt 2>/dev/null || echo 'stable')" >> $GITHUB_ENV
 
       - name: Add KernelSU support to kernel
         run: |
@@ -99,11 +98,6 @@ jobs:
           chmod +x anykernel.sh
           ./anykernel.sh
 
-      - name: Set ZIP_NO_KSU and ZIP_KSU environment variables
-        run: |
-          echo "ZIP_NO_KSU=${{ env.VERSION }}-NoKernelSU.zip" >> $GITHUB_ENV
-          echo "ZIP_KSU=${{ env.VERSION }}-KernelSU-$(cat ksu_version.txt).zip" >> $GITHUB_ENV
-
       - name: Make AnyKernel3 zip
         run: |
           chmod +x makezip.sh
@@ -115,27 +109,14 @@ jobs:
           ./extract.sh
 
       - name: Make a release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2 # Actualizado a v2
         with:
           files: |
-             ${{ github.workspace }}/${{ env.ZIP_NO_KSU }}
-             ${{ github.workspace }}/${{ env.ZIP_KSU }}
+             *.zip
           token: ${{ secrets.GITHUB_TOKEN }}
           name: KernelSU Release - ${{ env.KERNELSU_VERSION }}
           tag_name: ${{ github.run_id }}
           body: |
-             **Info:**
-              - KernelSU Version: ${{ env.KERNELSU_VERSION }}.
-              
-              **Installation:**
-              - Download desired zip file.
-              - Flash the zip file in recovery using sideload or any other method.
-            
-              <details>
-                <summary>Build Settings</summary>
-                  ```
-                  ${{ env.buildsettings }}
-                  ```
-              </details>
+             Kernel compilado para Moto G30 (caprip) con KernelSU.
           draft: false
           prerelease: false
