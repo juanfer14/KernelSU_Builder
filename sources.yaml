@@ -77,7 +77,7 @@ MotoG30-Stock:
   anykernel:
     - nashc
   kernelSU:
-    - next
+    - unstable
     
 Clean:
   out:
